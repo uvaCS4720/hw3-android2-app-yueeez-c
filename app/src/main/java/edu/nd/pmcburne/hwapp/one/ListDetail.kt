@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -38,47 +39,54 @@ fun ListDetail(
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) { onItemClick() }
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // ---- Left: Team names ----
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.awayTeam,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (item.homeWinner == false && item.status == "post")
-                        FontWeight.Bold else FontWeight.Normal
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "${item.homeTeam} (H)",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (item.homeWinner == true)
-                        FontWeight.Bold else FontWeight.Normal
-                )
-            }
-
-            // ---- Middle: Scores or start time ----
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 12.dp)
+            // ---- Top row: Team names (full width) + scores on right ----
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                when (item.status) {
-                    "pre" -> {
+                // Team names take all available horizontal space
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.awayTeam,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (item.homeWinner == false && item.status == "post")
+                            FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = formatStartTime(item.startTime),
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = item.homeTeam,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (item.homeWinner == true)
+                                FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "H",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
-                    "in", "post" -> {
+                }
+
+                // Scores only appear for live / finished games
+                if (item.status == "in" || item.status == "post") {
+                    Spacer(Modifier.width(16.dp))
+                    Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = "${item.awayScore ?: "-"}",
                             style = MaterialTheme.typography.bodyLarge,
@@ -96,11 +104,30 @@ fun ListDetail(
                 }
             }
 
-            // ---- Right: Status badge ----
-            Column(horizontalAlignment = Alignment.End) {
+            // ---- Bottom row: time/clock on left, status badge on right ----
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val timeText = when (item.status) {
+                    "pre" -> formatStartTime(item.startTime)
+                    "in"  -> item.clock ?: ""
+                    else  -> ""
+                }
+                Text(
+                    text = timeText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (item.status == "in")
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.outline
+                )
+
                 val (badgeText, badgeColor) = when (item.status) {
-                    "post" -> "Final" to MaterialTheme.colorScheme.outline
-                    "in"   -> "LIVE" to MaterialTheme.colorScheme.error
+                    "post" -> "Final"    to MaterialTheme.colorScheme.outline
+                    "in"   -> "LIVE"     to MaterialTheme.colorScheme.error
                     else   -> "Upcoming" to MaterialTheme.colorScheme.primary
                 }
                 Surface(
@@ -115,16 +142,6 @@ fun ListDetail(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                if (item.status == "in" && item.clock != null) {
-                    Spacer(Modifier.height(4.dp))
-                    item.clock?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
             }
         }
     }
@@ -135,7 +152,7 @@ private fun formatStartTime(isoDate: String?): String {
     return try {
         val instant = java.time.Instant.parse(isoDate)
         val local = instant.atZone(java.time.ZoneId.systemDefault())
-        local.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+        local.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy h:mm a z"))
     } catch (e: Exception) {
         isoDate
     }
