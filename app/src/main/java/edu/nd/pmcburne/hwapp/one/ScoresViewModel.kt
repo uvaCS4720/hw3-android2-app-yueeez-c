@@ -27,6 +27,15 @@ class ScoresViewModel(
         Pair(date.toString(), gender)
     }.flatMapLatest { (date, gender) ->
         gameDao.getGames(date, gender)
+    }.map { gameList ->
+        gameList.sortedBy { game ->
+            when (game.status) {
+                "in"   -> 0    // live games first
+                "pre"  -> 1    // upcoming second
+                "post" -> 2    // finished last
+                else   -> 3
+            }
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
