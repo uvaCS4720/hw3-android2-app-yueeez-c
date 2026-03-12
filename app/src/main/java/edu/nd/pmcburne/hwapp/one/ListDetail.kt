@@ -101,7 +101,7 @@ fun ListDetail(
                 val (badgeText, badgeColor) = when (item.status) {
                     "post" -> "Final" to MaterialTheme.colorScheme.outline
                     "in"   -> "LIVE" to MaterialTheme.colorScheme.error
-                    else   -> "Soon" to MaterialTheme.colorScheme.primary
+                    else   -> "Upcoming" to MaterialTheme.colorScheme.primary
                 }
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -115,13 +115,15 @@ fun ListDetail(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                if (item.status == "in" && item.period != null) {
+                if (item.status == "in" && item.clock != null) {
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "P${item.period}  ${item.clock ?: ""}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    item.clock?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

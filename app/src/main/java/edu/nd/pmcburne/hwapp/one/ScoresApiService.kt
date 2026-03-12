@@ -72,6 +72,7 @@ fun parseGames(response: ScoreboardResponse, gender: String, date: String): List
             "live"  -> "in"
             else    -> "pre"
         }
+        android.util.Log.d("ScoresVM", "Game: ${g.gameID} state=${g.gameState} period=${g.currentPeriod} clock=${g.contestClock}")
 
         Game(
             id        = g.gameID,
@@ -82,10 +83,11 @@ fun parseGames(response: ScoreboardResponse, gender: String, date: String): List
             status    = status,
             startTime = if (status == "pre") "${g.startDate} ${g.startTime}" else null,
             period    = null,
-            clock     = if (status == "in") g.contestClock else null,
+            clock     = if (status == "in") "${g.currentPeriod} - ${g.contestClock}" else null,
             homeWinner = g.home?.winner,
             gender    = gender,
             date      = date
         )
+
     } ?: emptyList()
 }
